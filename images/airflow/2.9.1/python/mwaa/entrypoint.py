@@ -26,6 +26,7 @@ logging.config.dictConfig(LOGGING_CONFIG)
 # Python imports
 from typing import Dict, List
 import asyncio
+import json
 import logging
 import os
 import sys
@@ -194,6 +195,37 @@ async def install_user_requirements(cmd: str, environ: dict[str, str]):
     else:
         logger.info("No user requirements to install.")
 
+async def execute_startup_script(cmd: str, environ: Dict[str, str]):
+    """
+    Execute user startup script.
+
+    :param cmd - The command to run, e.g. "worker".
+    :param environ: A dictionary containing the environment variables.
+    """
+    EXECUTE_STARTUP_SCRIPT_PATH = "/usr/local/airflow/execute-startup.sh"
+    STARTUP_SCRIPT_PATH = "/usr/local/airflow/startup/startup.sh"
+
+    if os.path.isfile(STARTUP_SCRIPT_PATH):
+        logger.info("Executing startup script.")
+        worker = Subprocess(
+            cmd=["/bin/bash", EXECUTE_STARTUP_SCRIPT_PATH],
+            env=environ,
+            logger=logging.getLogger(f"mwaa.{cmd}"),
+        )
+        worker.start()
+
+        customer_stored_env_path = "/usr/local/airflow/customer_stored_env.json"
+        if os.path.isfile(customer_stored_env_path):
+            with open(customer_stored_env_path, "r") as f:
+                customer_env_dict = json.load(f)
+            return customer_env_dict
+        else:
+            return {}
+        
+    else:
+        logger.info(f"No startup script found at {STARTUP_SCRIPT_PATH}.")
+        return {}
+
 
 def export_env_variables(environ: dict[str, str]):
     """
@@ -330,6 +362,8 @@ async def main() -> None:
     await airflow_db_init(environ)
     await create_airflow_user(environ)
     create_queue()
+    customer_env = await execute_startup_script(command, environ)
+    environ = {**customer_env, **environ}
     await install_user_requirements(command, environ)
 
     # Export the environment variables to .bashrc and .bash_profile to enable

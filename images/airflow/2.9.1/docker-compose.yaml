@@ -55,6 +55,9 @@ x-airflow-common: &airflow-common
     - ./dags:/usr/local/airflow/dags
     - ./plugins:/usr/local/airflow/plugins
     - ./requirements:/usr/local/airflow/requirements
+    - ./startup:/usr/local/airflow/startup
+    - ./execute-startup.sh:/usr/local/airflow/execute-startup.sh
+    - ./verification.sh:/usr/local/airflow/verification.sh
   depends_on: &airflow-common-depends-on
     postgres:
       condition: service_healthy

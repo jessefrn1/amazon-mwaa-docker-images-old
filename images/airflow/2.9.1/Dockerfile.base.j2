@@ -108,3 +108,11 @@ COPY ./python /python
 # TODO Move this to the bin folder under airflow's home folder.
 COPY healthcheck.sh /healthcheck.sh
 RUN chmod +x /healthcheck.sh
+
+COPY execute-startup.sh /execute-startup.sh
+RUN chown airflow: /execute-startup.sh
+RUN chmod u+x /execute-startup.sh
+
+COPY verification.sh /verification.sh
+RUN chown airflow: /verification.sh
+RUN chmod u+x /verification.sh
